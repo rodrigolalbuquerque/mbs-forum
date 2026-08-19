@@ -1,0 +1,205 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import ScrollToBottom from "@/components/ScrollToBottom";
+import MessageBubble from "@/components/MessageBubble";
+import TopicTitle from "@/components/TopicTitle";
+import DeleteTopicButton from "@/components/DeleteTopicButton";
+import CommentComposer from "@/components/CommentComposer";
+import { formatDate } from "@/lib/format";
+import { setStatus } from "@/lib/actions";
+
+type Profile = {
+  name: string;
+  display_name: string | null;
+  avatar_url?: string | null;
+} | null;
+
+function displayOf(p: Profile): string {
+  return p?.display_name || p?.name || "Alguém";
+}
+
+type Post = {
+  id: string;
+  title: string;
+  body: string;
+  status: string;
+  created_at: string;
+  author_id: string;
+  status_changed_at: string | null;
+  author: Profile;
+  changer: Profile;
+};
+
+type Comment = {
+  id: string;
+  body: string;
+  created_at: string;
+  author_id: string;
+  author: Profile;
+};
+
+export default async function ChatPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: postData } = await supabase
+    .from("posts")
+    .select(
+      "id, title, body, status, created_at, author_id, status_changed_at, author:profiles!posts_author_id_fkey(name, display_name, avatar_url), changer:profiles!posts_status_changed_by_fkey(name, display_name)",
+    )
+    .eq("id", id)
+    .single();
+
+  if (!postData) notFound();
+  const post = postData as unknown as Post;
+
+  const { data: commentsData } = await supabase
+    .from("comments")
+    .select(
+      "id, body, created_at, author_id, author:profiles!comments_author_id_fkey(name, display_name, avatar_url)",
+    )
+    .eq("post_id", id)
+    .order("created_at", { ascending: true });
+  const comments = (commentsData ?? []) as unknown as Comment[];
+
+  const isConcluido = post.status === "concluido";
+  const isAuthor = post.author_id === user!.id;
+  const authorName = displayOf(post.author);
+
+  return (
+    <div className="flex h-full w-full flex-col">
+      {/* Cabeçalho da conversa */}
+      <header className="flex items-center gap-3 bg-wa-panel px-3 py-2 md:px-4">
+        <Link
+          href="/"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-wa-secondary hover:bg-black/5 md:hidden"
+          aria-label="Voltar"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M15.5 4l-8 8 8 8 1.4-1.4L10.3 12l6.6-6.6z" />
+          </svg>
+        </Link>
+        <TopicTitle
+          postId={post.id}
+          title={post.title}
+          subtitle={`criado por ${authorName}`}
+          canEdit={isAuthor}
+        />
+
+        {/* Botão de status */}
+        <form action={setStatus}>
+          <input type="hidden" name="post_id" value={post.id} />
+          <input
+            type="hidden"
+            name="status"
+            value={isConcluido ? "aberto" : "concluido"}
+          />
+          <button
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              isConcluido
+                ? "bg-amber-500 text-white hover:bg-amber-600"
+                : "bg-wa-green text-white hover:bg-wa-green-dark"
+            }`}
+          >
+            {isConcluido ? "Reabrir" : "Concluir"}
+          </button>
+        </form>
+
+        {isAuthor && (
+          <DeleteTopicButton postId={post.id} title={post.title} />
+        )}
+      </header>
+
+      {/* Corpo da conversa */}
+      <div className="wa-scroll wa-chat-bg flex-1 overflow-y-auto px-4 py-4 md:px-16">
+        <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
+          {/* aviso de abertura */}
+          <SystemChip>
+            Tópico aberto por {authorName} · {formatDate(post.created_at)}
+          </SystemChip>
+
+          {/* mensagem de abertura (corpo do tópico) */}
+          {post.body && (
+            <MessageBubble
+              mine={post.author_id === user!.id}
+              name={authorName}
+              avatarSrc={post.author?.avatar_url}
+              body={post.body}
+              time={post.created_at}
+              editable={isAuthor}
+              kind="post"
+              id={post.id}
+              postId={post.id}
+            />
+          )}
+
+          {/* comentários */}
+          {comments.map((c) => (
+            <MessageBubble
+              key={c.id}
+              mine={c.author_id === user!.id}
+              name={displayOf(c.author)}
+              avatarSrc={c.author?.avatar_url}
+              body={c.body}
+              time={c.created_at}
+              editable={c.author_id === user!.id}
+              kind="comment"
+              id={c.id}
+              postId={post.id}
+            />
+          ))}
+
+          {/* aviso de status */}
+          {post.changer && post.status_changed_at && (
+            <SystemChip highlight>
+              {displayOf(post.changer)} marcou como{" "}
+              {isConcluido ? "Concluído" : "Aberto"} ·{" "}
+              {formatDate(post.status_changed_at)}
+            </SystemChip>
+          )}
+
+          <ScrollToBottom
+            dep={`${comments.length}:${comments[comments.length - 1]?.id ?? ""}`}
+          />
+        </div>
+      </div>
+
+      {/* Campo de digitar */}
+      <footer className="bg-wa-panel px-3 py-2.5 md:px-4">
+        <CommentComposer postId={post.id} />
+      </footer>
+    </div>
+  );
+}
+
+function SystemChip({
+  children,
+  highlight,
+}: {
+  children: React.ReactNode;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="my-2 flex justify-center">
+      <span
+        className={`rounded-lg px-3 py-1 text-center text-xs shadow-sm ${
+          highlight
+            ? "bg-wa-green/15 text-wa-green-dark"
+            : "bg-wa-bubblein/90 text-wa-secondary"
+        }`}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
