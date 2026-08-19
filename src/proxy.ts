@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Rotas que podem ser acessadas sem login.
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/instalar"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -35,13 +35,18 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
+  // Deslogado: no mobile mostra a tela de instalação; no desktop vai ao login.
   if (!user && !isPublic) {
+    const ua = request.headers.get("user-agent") ?? "";
+    const isMobile =
+      /android|iphone|ipad|ipod|mobile|blackberry|iemobile|opera mini/i.test(ua);
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = isMobile ? "/instalar" : "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && path === "/login") {
+  // Logado não precisa ver login/instalar.
+  if (user && (path === "/login" || path === "/instalar")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

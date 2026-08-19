@@ -73,7 +73,7 @@ export default function TopicList({ items }: { items: TopicItem[] }) {
                       active
                         ? "bg-wa-panel"
                         : concluido
-                          ? "bg-black/[0.04] hover:bg-wa-hover"
+                          ? "bg-black/4 hover:bg-wa-hover"
                           : "hover:bg-wa-hover"
                     }`}
                   >
