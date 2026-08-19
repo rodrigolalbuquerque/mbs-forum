@@ -58,6 +58,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Roda em tudo menos arquivos estáticos, imagens e o manifesto/SW do PWA.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|version|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
