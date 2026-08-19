@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createPost } from "@/lib/actions";
+import SubmitButton from "@/components/SubmitButton";
 
 export default function NewTopicPage() {
   return (
@@ -48,12 +49,12 @@ export default function NewTopicPage() {
               className="w-full resize-y rounded-lg border border-wa-panelborder px-3 py-2.5 text-sm outline-none focus:border-wa-green"
             />
           </div>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Criando..."
             className="self-start rounded-full bg-wa-green px-6 py-2.5 text-sm font-medium text-white transition hover:bg-wa-green-dark"
           >
             Criar tópico
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>
