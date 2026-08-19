@@ -1,8 +1,9 @@
 {
+  "id": "/",
   "name": "MBS Fórum",
   "short_name": "MBS Fórum",
   "description": "Fórum do MBS Digital para debater questões e chegar a decisões em grupo.",
-  "start_url": "/",
+  "start_url": "/login",
   "display": "standalone",
   "background_color": "#efeae2",
   "theme_color": "#008069",
