@@ -163,6 +163,18 @@ export async function deletePostById(postId: string) {
   redirect("/");
 }
 
+// Aprovar/revogar um usuário (a RPC no banco exige que o autor seja admin).
+export async function setApproval(userId: string, approve: boolean) {
+  if (!userId) return;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("set_user_approval", {
+    target_id: userId,
+    approve,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

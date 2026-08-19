@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,17 @@ export default function LoginPage() {
       router.replace("/");
       router.refresh();
     } else {
+      if (password.length < 6) {
+        setError("A senha deve ter pelo menos 6 caracteres.");
+        setLoading(false);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("As senhas não conferem.");
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -57,21 +69,21 @@ export default function LoginPage() {
       });
       if (error) {
         setError(
-          error.message.includes("nao autorizado") ||
-            error.message.includes("Database error")
-            ? "Este e-mail não está autorizado. Peça ao administrador para liberar seu acesso."
+          error.message.toLowerCase().includes("already registered")
+            ? "Este e-mail já tem uma conta. Faça login."
             : error.message,
         );
         setLoading(false);
         return;
       }
-      // Se a confirmação por e-mail estiver desligada, já vem sessão.
+      // Se a confirmação por e-mail estiver desligada, já vem sessão →
+      // a tela de "aguardando aprovação" aparece pelo gate do app.
       if (data.session) {
         router.replace("/");
         router.refresh();
       } else {
         setInfo(
-          "Conta criada! Verifique seu e-mail para confirmar o cadastro e depois faça login.",
+          "Conta criada! Confirme seu e-mail e aguarde a aprovação de um administrador.",
         );
         setMode("login");
         setLoading(false);
@@ -97,7 +109,7 @@ export default function LoginPage() {
             <p className="text-sm text-wa-secondary">
               {mode === "login"
                 ? "Entre para participar dos debates."
-                : "Crie sua conta (apenas convidados)."}
+                : "Crie sua conta (acesso liberado por um admin)."}
             </p>
           </div>
         </div>
@@ -134,6 +146,18 @@ export default function LoginPage() {
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           className="rounded-lg border border-wa-panelborder px-3 py-2.5 text-sm text-[#111b21] outline-none focus:border-wa-green"
         />
+        {mode === "signup" && (
+          <input
+            type="password"
+            placeholder="Confirmar senha"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+            autoComplete="new-password"
+            className="rounded-lg border border-wa-panelborder px-3 py-2.5 text-sm text-[#111b21] outline-none focus:border-wa-green"
+          />
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         {info && <p className="text-sm text-wa-green-dark">{info}</p>}

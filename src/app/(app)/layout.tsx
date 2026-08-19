@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ProfileButton from "@/components/ProfileButton";
 import Shell from "@/components/Shell";
@@ -18,11 +19,16 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, display_name, avatar_url")
+    .select("name, display_name, avatar_url, approved, is_admin")
     .eq("id", user!.id)
     .single();
-  const username = profile?.name ?? "voce";
-  const myDisplayName = profile?.display_name || username;
+
+  // Só quem foi aprovado por um admin acessa o app.
+  if (!profile?.approved) redirect("/pendente");
+
+  const username = profile.name ?? "voce";
+  const myDisplayName = profile.display_name || username;
+  const isAdmin = profile.is_admin;
 
   const { data: postsData } = await supabase
     .from("posts")
@@ -97,6 +103,17 @@ export default async function AppLayout({
             avatarUrl={profile?.avatar_url ?? null}
           />
           <div className="flex items-center gap-1">
+            {isAdmin && (
+              <Link
+                href="/admin"
+                title="Administração"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-wa-secondary hover:bg-black/5"
+              >
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor">
+                  <path d="M12 1l9 4v6c0 5-3.8 9.4-9 11-5.2-1.6-9-6-9-11V5l9-4zm0 6a3 3 0 100 6 3 3 0 000-6z" />
+                </svg>
+              </Link>
+            )}
             <Link
               href="/new"
               title="Novo tópico"

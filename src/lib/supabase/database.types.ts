@@ -14,18 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      allowed_emails: {
-        Row: {
-          email: string
-        }
-        Insert: {
-          email: string
-        }
-        Update: {
-          email?: string
-        }
-        Relationships: []
-      }
       comments: {
         Row: {
           author_id: string
@@ -115,24 +103,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved: boolean
           avatar_url: string | null
           display_name: string | null
           email: string | null
           id: string
+          is_admin: boolean
           name: string
         }
         Insert: {
+          approved?: boolean
           avatar_url?: string | null
           display_name?: string | null
           email?: string | null
           id: string
+          is_admin?: boolean
           name: string
         }
         Update: {
+          approved?: boolean
           avatar_url?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
+          is_admin?: boolean
           name?: string
         }
         Relationships: []
@@ -143,6 +137,12 @@ export type Database = {
     }
     Functions: {
       email_for_username: { Args: { uname: string }; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
+      is_approved: { Args: never; Returns: boolean }
+      set_user_approval: {
+        Args: { approve: boolean; target_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
