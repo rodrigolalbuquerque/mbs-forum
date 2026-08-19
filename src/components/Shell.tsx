@@ -24,9 +24,13 @@ export default function Shell({
         {left}
       </aside>
 
-      {/* Conversa: escondida no mobile quando na home. */}
+      {/* Conversa: escondida no mobile quando na home.
+          min-w-0 é essencial: sem ele, este item flex não encolhe abaixo do
+          conteúdo e estoura o Shell para a direita no mobile. */}
       <section
-        className={`h-full flex-1 ${isHome ? "hidden md:flex" : "flex"}`}
+        className={`h-full min-w-0 flex-1 ${
+          isHome ? "hidden md:flex" : "flex"
+        }`}
       >
         {children}
       </section>

@@ -76,9 +76,9 @@ export default async function ChatPage({
   const authorName = displayOf(post.author);
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full w-full min-w-0 flex-col">
       {/* Cabeçalho da conversa */}
-      <header className="flex items-center gap-3 bg-wa-panel px-3 py-2 md:px-4">
+      <header className="flex min-w-0 items-center gap-3 bg-wa-panel px-3 py-2 md:px-4">
         <Link
           href="/"
           className="flex h-9 w-9 items-center justify-center rounded-full text-wa-secondary hover:bg-black/5 md:hidden"
@@ -114,14 +114,12 @@ export default async function ChatPage({
           </button>
         </form>
 
-        {isAuthor && (
-          <DeleteTopicButton postId={post.id} title={post.title} />
-        )}
+        {isAuthor && <DeleteTopicButton postId={post.id} title={post.title} />}
       </header>
 
       {/* Corpo da conversa */}
-      <div className="wa-scroll wa-chat-bg flex-1 overflow-y-auto px-4 py-4 md:px-16">
-        <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
+      <div className="wa-scroll wa-chat-bg flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 md:px-16">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-1.5">
           {/* aviso de abertura */}
           <SystemChip>
             Tópico aberto por {authorName} · {formatDate(post.created_at)}
@@ -202,4 +200,3 @@ function SystemChip({
     </div>
   );
 }
-
