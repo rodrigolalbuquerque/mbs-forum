@@ -72,7 +72,7 @@ export default function MessageBubble({
     >
       {!mine && <Avatar name={name} src={avatarSrc} size={26} />}
       <div
-        className={`relative max-w-[78%] rounded-lg pl-3 pr-8 py-2 shadow-sm ${
+        className={`max-w-[85%] rounded-lg px-2.5 py-1.5 shadow-sm ${
           mine ? "bg-wa-bubbleout" : "bg-wa-bubblein"
         }`}
       >
@@ -86,7 +86,7 @@ export default function MessageBubble({
         )}
 
         {editing ? (
-          <div className="w-[78vw] max-w-140">
+          <div className="w-[72vw] max-w-140">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -94,7 +94,7 @@ export default function MessageBubble({
               autoFocus
               className="w-full resize-y bg-transparent text-sm leading-relaxed text-[#111b21] outline-none placeholder:text-wa-secondary"
             />
-            <div className="-mr-5 mt-1 flex justify-end gap-3 border-t border-black/10 pt-1.5 text-xs">
+            <div className="mt-1 flex justify-end gap-3 border-t border-black/10 pt-1.5 text-xs">
               <button
                 onClick={() => {
                   setDraft(body);
@@ -116,58 +116,58 @@ export default function MessageBubble({
           </div>
         ) : (
           <>
-            <span className="whitespace-pre-wrap break-words text-sm text-[#111b21]">
+            <div className="whitespace-pre-wrap wrap-break-word text-sm text-[#111b21]">
               {body}
-            </span>
-            <span className="float-right ml-2 mt-1 select-none text-[10px] text-wa-secondary">
-              {formatTime(time)}
-            </span>
-          </>
-        )}
-
-        {/* Menu de ações (só nas próprias mensagens) */}
-        {editable && !editing && (
-          <div className="absolute right-1 top-1">
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-6 w-6 items-center justify-center rounded text-wa-secondary opacity-60 transition hover:bg-black/10 group-hover:opacity-100 aria-expanded:opacity-100"
-              aria-expanded={menuOpen}
-              aria-label="Opções"
-            >
-              <ChevronDown size={20} strokeWidth={2.25} />
-            </button>
-            {menuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 z-20 mt-1 w-32 overflow-hidden rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5">
+            </div>
+            <div className="mt-1 flex items-center justify-end gap-1">
+              <span className="select-none text-[10px] text-wa-secondary">
+                {formatTime(time)}
+              </span>
+              {editable && (
+                <div className="relative">
                   <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setDraft(body);
-                      setEditing(true);
-                    }}
-                    className="block w-full px-3 py-1.5 text-left text-[#111b21] hover:bg-wa-hover"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    className="-mr-1 flex h-5 w-5 items-center justify-center rounded text-wa-secondary hover:bg-black/10 aria-expanded:bg-black/10"
+                    aria-expanded={menuOpen}
+                    aria-label="Opções"
                   >
-                    Editar
+                    <ChevronDown size={16} strokeWidth={2.25} />
                   </button>
-                  {kind === "comment" && (
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setConfirmOpen(true);
-                      }}
-                      className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-wa-hover"
-                    >
-                      Apagar
-                    </button>
+                  {menuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setMenuOpen(false)}
+                      />
+                      <div className="absolute bottom-full right-0 z-20 mb-1 w-32 overflow-hidden rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black/5">
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setDraft(body);
+                            setEditing(true);
+                          }}
+                          className="block w-full px-3 py-1.5 text-left text-[#111b21] hover:bg-wa-hover"
+                        >
+                          Editar
+                        </button>
+                        {kind === "comment" && (
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setConfirmOpen(true);
+                            }}
+                            className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-wa-hover"
+                          >
+                            Apagar
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
