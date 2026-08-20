@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BUILD_ID:
       process.env.VERCEL_GIT_COMMIT_SHA ?? `dev-${Date.now()}`,
   },
+  experimental: {
+    // Mantém no cache do Router os tópicos visitados por 30s → voltar a um
+    // tópico recente é instantâneo (sem novo ida-e-volta ao servidor).
+    staleTimes: {
+      dynamic: 30,
+    },
+  },
 };
 
 export default nextConfig;

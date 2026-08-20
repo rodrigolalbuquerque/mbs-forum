@@ -47,32 +47,36 @@ export default async function ChatPage({
   const { id } = await params;
   const supabase = await createClient();
 
+  // user.id local (sem chamada de rede) — o proxy/middleware já validou a sessão.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const userId = session?.user.id;
 
-  const { data: postData } = await supabase
-    .from("posts")
-    .select(
-      "id, title, body, status, created_at, author_id, status_changed_at, author:profiles!posts_author_id_fkey(name, display_name, avatar_url), changer:profiles!posts_status_changed_by_fkey(name, display_name)",
-    )
-    .eq("id", id)
-    .single();
+  // Post e comentários em paralelo (1 ida-e-volta em vez de 2 sequenciais).
+  const [{ data: postData }, { data: commentsData }] = await Promise.all([
+    supabase
+      .from("posts")
+      .select(
+        "id, title, body, status, created_at, author_id, status_changed_at, author:profiles!posts_author_id_fkey(name, display_name, avatar_url), changer:profiles!posts_status_changed_by_fkey(name, display_name)",
+      )
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("comments")
+      .select(
+        "id, body, created_at, author_id, author:profiles!comments_author_id_fkey(name, display_name, avatar_url)",
+      )
+      .eq("post_id", id)
+      .order("created_at", { ascending: true }),
+  ]);
 
   if (!postData) notFound();
   const post = postData as unknown as Post;
-
-  const { data: commentsData } = await supabase
-    .from("comments")
-    .select(
-      "id, body, created_at, author_id, author:profiles!comments_author_id_fkey(name, display_name, avatar_url)",
-    )
-    .eq("post_id", id)
-    .order("created_at", { ascending: true });
   const comments = (commentsData ?? []) as unknown as Comment[];
 
   const isConcluido = post.status === "concluido";
-  const isAuthor = post.author_id === user!.id;
+  const isAuthor = post.author_id === userId;
   const authorName = displayOf(post.author);
 
   return (
@@ -128,7 +132,7 @@ export default async function ChatPage({
           {/* mensagem de abertura (corpo do tópico) */}
           {post.body && (
             <MessageBubble
-              mine={post.author_id === user!.id}
+              mine={post.author_id === userId}
               name={authorName}
               avatarSrc={post.author?.avatar_url}
               body={post.body}
@@ -144,12 +148,12 @@ export default async function ChatPage({
           {comments.map((c) => (
             <MessageBubble
               key={c.id}
-              mine={c.author_id === user!.id}
+              mine={c.author_id === userId}
               name={displayOf(c.author)}
               avatarSrc={c.author?.avatar_url}
               body={c.body}
               time={c.created_at}
-              editable={c.author_id === user!.id}
+              editable={c.author_id === userId}
               kind="comment"
               id={c.id}
               postId={post.id}
