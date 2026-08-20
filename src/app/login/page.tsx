@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,6 +16,17 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showInstall, setShowInstall] = useState(false);
+
+  // Convite de instalação só no celular e quando ainda não está instalado.
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    const isMobile = /android|iphone|ipad|ipod|mobile/i.test(ua);
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+    setShowInstall(isMobile && !standalone);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -187,6 +198,18 @@ export default function LoginPage() {
             ? "Não tem conta? Criar conta"
             : "Já tem conta? Entrar"}
         </button>
+
+        {showInstall && (
+          <a
+            href="/instalar"
+            className="mt-4 flex items-center justify-center gap-1.5 border-t border-wa-panelborder pt-3 text-xs text-wa-secondary hover:text-wa-green-dark"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+              <path d="M12 3v10.6l3.3-3.3 1.4 1.4L12 17.4 6.3 11.7l1.4-1.4L11 13.6V3h1zM5 19h14v2H5z" />
+            </svg>
+            Instalar o app no celular
+          </a>
+        )}
       </div>
     </main>
   );

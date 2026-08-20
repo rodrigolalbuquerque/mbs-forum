@@ -35,13 +35,11 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
-  // Deslogado: no mobile mostra a tela de instalação; no desktop vai ao login.
+  // Deslogado vai direto ao login (mobile e desktop). A instalação do app é
+  // opcional, oferecida discretamente na própria tela de login.
   if (!user && !isPublic) {
-    const ua = request.headers.get("user-agent") ?? "";
-    const isMobile =
-      /android|iphone|ipad|ipod|mobile|blackberry|iemobile|opera mini/i.test(ua);
     const url = request.nextUrl.clone();
-    url.pathname = isMobile ? "/instalar" : "/login";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
