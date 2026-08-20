@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { resizeImageToSquare } from "@/lib/image";
 import Avatar from "@/components/Avatar";
 
 export default function ProfileButton({
@@ -17,7 +17,6 @@ export default function ProfileButton({
   avatarUrl: string | null;
 }) {
   const router = useRouter();
-  const supabase = createClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
@@ -43,13 +42,22 @@ export default function ProfileButton({
     setSaving(true);
     setError(null);
     try {
+      // Carrega o supabase-js só na hora de salvar (fora do bundle inicial).
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
       let newAvatarUrl = avatarUrl;
 
       if (file) {
+        // Reduz para ~256px antes de subir (bem mais leve p/ carregar depois).
+        const blob = await resizeImageToSquare(file, 256, 0.85);
         const path = `${userId}/avatar`;
         const { error: upErr } = await supabase.storage
           .from("avatars")
-          .upload(path, file, { upsert: true, contentType: file.type });
+          .upload(path, blob, {
+            upsert: true,
+            contentType: blob.type || "image/webp",
+            cacheControl: "31536000",
+          });
         if (upErr) throw upErr;
 
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);

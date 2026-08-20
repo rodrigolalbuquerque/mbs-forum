@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { onIdle, cancelIdle } from "@/lib/idle";
 
 // Mantém o app sempre na versão mais nova: verifica periodicamente (e ao
 // reabrir/focar) qual build está publicada; se for diferente da carregada,
-// recarrega a página automaticamente. Assim ninguém precisa limpar cache.
+// recarrega a página automaticamente. A checagem começa após o carregamento
+// (ocioso) para não competir com o primeiro paint.
 export default function VersionWatcher() {
   useEffect(() => {
     const current = process.env.NEXT_PUBLIC_BUILD_ID;
@@ -12,6 +14,7 @@ export default function VersionWatcher() {
     if (!current || current.startsWith("dev")) return;
 
     let stopped = false;
+    let interval: ReturnType<typeof setInterval> | undefined;
 
     async function check() {
       try {
@@ -35,13 +38,16 @@ export default function VersionWatcher() {
       if (document.visibilityState === "visible") check();
     };
 
-    check();
-    const interval = setInterval(check, 60_000);
-    document.addEventListener("visibilitychange", onVisible);
+    const idleId = onIdle(() => {
+      check();
+      interval = setInterval(check, 60_000);
+      document.addEventListener("visibilitychange", onVisible);
+    });
 
     return () => {
       stopped = true;
-      clearInterval(interval);
+      cancelIdle(idleId);
+      if (interval) clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);

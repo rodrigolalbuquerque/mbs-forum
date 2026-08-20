@@ -30,67 +30,19 @@ export default async function AppLayout({
   const myDisplayName = profile.display_name || username;
   const isAdmin = profile.is_admin;
 
-  const { data: postsData } = await supabase
-    .from("posts")
-    .select(
-      "id, title, body, status, created_at, author:profiles!posts_author_id_fkey(name), comments(count)",
-    )
-    .order("created_at", { ascending: false });
-
-  // Último comentário de cada tópico (para a prévia estilo WhatsApp).
-  const { data: commentsData } = await supabase
-    .from("comments")
-    .select(
-      "post_id, body, created_at, author:profiles!comments_author_id_fkey(name, display_name)",
-    )
-    .order("created_at", { ascending: false });
-
-  type LastComment = { author: string; body: string; created_at: string };
-  const lastByPost = new Map<string, LastComment>();
-  for (const c of (commentsData ?? []) as unknown as {
-    post_id: string;
-    body: string;
-    created_at: string;
-    author: { name: string; display_name: string | null } | null;
-  }[]) {
-    if (!lastByPost.has(c.post_id)) {
-      lastByPost.set(c.post_id, {
-        author: c.author?.display_name || c.author?.name || "Alguém",
-        body: c.body,
-        created_at: c.created_at,
-      });
-    }
-  }
-
-  const items: TopicItem[] = (
-    (postsData ?? []) as unknown as {
-      id: string;
-      title: string;
-      body: string;
-      status: string;
-      created_at: string;
-      author: { name: string } | null;
-      comments: { count: number }[];
-    }[]
-  ).map((p) => {
-    const last = lastByPost.get(p.id);
-    return {
-      id: p.id,
-      title: p.title,
-      status: p.status,
-      count: p.comments?.[0]?.count ?? 0,
-      preview: last ? `${last.author}: ${last.body}` : p.body || "Novo tópico",
-      lastActivity: last?.created_at ?? p.created_at,
-    };
-  });
-
-  // Abertos primeiro; dentro de cada grupo, por atividade mais recente.
-  items.sort((a, b) => {
-    const ac = a.status === "concluido" ? 1 : 0;
-    const bc = b.status === "concluido" ? 1 : 0;
-    if (ac !== bc) return ac - bc;
-    return b.lastActivity.localeCompare(a.lastActivity);
-  });
+  // Uma consulta enxuta: por tópico, último comentário + contagem, já ordenada
+  // no banco (abertos primeiro, depois por atividade mais recente).
+  const { data: topicsData } = await supabase.rpc("list_topics");
+  const items: TopicItem[] = (topicsData ?? []).map((r) => ({
+    id: r.id,
+    title: r.title,
+    status: r.status,
+    count: Number(r.comment_count) || 0,
+    preview: r.last_body
+      ? `${r.last_author}: ${r.last_body}`
+      : r.topic_preview || "Novo tópico",
+    lastActivity: r.last_activity,
+  }));
 
   const left = (
     <>

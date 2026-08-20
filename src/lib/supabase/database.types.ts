@@ -139,6 +139,20 @@ export type Database = {
       email_for_username: { Args: { uname: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_approved: { Args: never; Returns: boolean }
+      list_topics: {
+        Args: never
+        Returns: {
+          comment_count: number
+          created_at: string
+          id: string
+          last_activity: string
+          last_author: string
+          last_body: string
+          status: string
+          title: string
+          topic_preview: string
+        }[]
+      }
       set_user_approval: {
         Args: { approve: boolean; target_id: string }
         Returns: undefined
