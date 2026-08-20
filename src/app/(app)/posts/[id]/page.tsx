@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ScrollToBottom from "@/components/ScrollToBottom";
+import MarkRead from "@/components/MarkRead";
 import MessageBubble from "@/components/MessageBubble";
 import TopicTitle from "@/components/TopicTitle";
 import DeleteTopicButton from "@/components/DeleteTopicButton";
@@ -81,6 +82,9 @@ export default async function ChatPage({
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col">
+      {/* Marca como lido (some o badge de não-lidas deste tópico). */}
+      <MarkRead postId={post.id} signal={comments.length} />
+
       {/* Cabeçalho da conversa */}
       <header className="flex min-w-0 items-center gap-3 bg-wa-panel px-3 py-2 md:px-4">
         <Link

@@ -175,6 +175,16 @@ export async function setApproval(userId: string, approve: boolean) {
   revalidatePath("/admin");
 }
 
+// Marca o tópico como lido pelo usuário atual (para o badge de não-lidas).
+// Usa RPC para gravar o now() do banco (evita desvio de relógio).
+export async function markTopicRead(postId: string) {
+  if (!postId) return;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("mark_topic_read", { p_id: postId });
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

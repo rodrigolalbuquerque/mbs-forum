@@ -37,7 +37,7 @@ export default async function AppLayout({
     id: r.id,
     title: r.title,
     status: r.status,
-    count: Number(r.comment_count) || 0,
+    count: Number(r.unread_count) || 0,
     preview: r.last_body
       ? `${r.last_author}: ${r.last_body}`
       : r.topic_preview || "Novo tópico",

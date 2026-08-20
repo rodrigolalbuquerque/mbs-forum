@@ -131,6 +131,32 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_reads: {
+        Row: {
+          last_read_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_reads_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -151,7 +177,12 @@ export type Database = {
           status: string
           title: string
           topic_preview: string
+          unread_count: number
         }[]
+      }
+      mark_topic_read: {
+        Args: { p_id: string }
+        Returns: undefined
       }
       set_user_approval: {
         Args: { approve: boolean; target_id: string }
