@@ -1,12 +1,22 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { addComment } from "@/lib/actions";
+import { useEffect, useRef } from "react";
 
-export default function CommentComposer({ postId }: { postId: string }) {
+// Composer apresentacional: o estado do texto e o envio ficam no pai
+// (Conversation), que faz o envio otimista. Aqui só cuidamos da UI:
+// auto-crescer, Enter envia / Shift+Enter quebra linha, e travar durante o envio.
+export default function CommentComposer({
+  value,
+  onChange,
+  onSend,
+  pending,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  pending: boolean;
+}) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
-  const [body, setBody] = useState("");
-  const [pending, startTransition] = useTransition();
 
   function autoGrow() {
     const el = areaRef.current;
@@ -15,36 +25,13 @@ export default function CommentComposer({ postId }: { postId: string }) {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }
 
-  function send() {
-    const text = body.trim();
-    // Bloqueia envio vazio ou enquanto já está enviando (evita duplicatas).
-    if (!text || pending) return;
-
-    // Limpa o campo na hora → um reenvio acidental manda vazio (bloqueado).
-    setBody("");
-    requestAnimationFrame(() => {
-      if (areaRef.current) areaRef.current.style.height = "auto";
-    });
-
-    const fd = new FormData();
-    fd.set("post_id", postId);
-    fd.set("body", text);
-
-    startTransition(async () => {
-      try {
-        await addComment(fd);
-      } catch {
-        // Falhou: devolve o texto para o campo, sem perder a mensagem.
-        setBody(text);
-      }
-    });
-  }
+  // Ajusta a altura quando o texto muda (inclui o "limpar" após enviar).
+  useEffect(autoGrow, [value]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    // Enter envia; Shift+Enter quebra a linha.
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      send();
+      onSend();
     }
   }
 
@@ -52,21 +39,18 @@ export default function CommentComposer({ postId }: { postId: string }) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        send();
+        onSend();
       }}
       className="mx-auto flex max-w-3xl items-end gap-2"
     >
       <textarea
         ref={areaRef}
-        value={body}
-        onChange={(e) => {
-          setBody(e.target.value);
-          autoGrow();
-        }}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         rows={1}
-        // readOnly (não disabled) enquanto envia: bloqueia digitar/enviar mas
-        // não fecha o teclado do celular.
+        // readOnly (não disabled) enquanto envia: bloqueia digitar/enviar sem
+        // fechar o teclado do celular.
         readOnly={pending}
         autoComplete="off"
         placeholder="Escreva um comentário"
@@ -76,7 +60,7 @@ export default function CommentComposer({ postId }: { postId: string }) {
       />
       <button
         type="submit"
-        disabled={pending || !body.trim()}
+        disabled={pending || !value.trim()}
         aria-label="Enviar"
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-wa-green text-white transition hover:bg-wa-green-dark disabled:cursor-not-allowed disabled:opacity-60"
       >

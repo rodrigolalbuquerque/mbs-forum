@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import ScrollToBottom from "@/components/ScrollToBottom";
 import MarkRead from "@/components/MarkRead";
 import MessageBubble from "@/components/MessageBubble";
 import TopicTitle from "@/components/TopicTitle";
 import DeleteTopicButton from "@/components/DeleteTopicButton";
-import CommentComposer from "@/components/CommentComposer";
+import Conversation, { type ChatMessage } from "@/components/Conversation";
 import { formatDate } from "@/lib/format";
 import { setStatus } from "@/lib/actions";
 
@@ -80,6 +79,15 @@ export default async function ChatPage({
   const isAuthor = post.author_id === userId;
   const authorName = displayOf(post.author);
 
+  const initialMessages: ChatMessage[] = comments.map((c) => ({
+    id: c.id,
+    body: c.body,
+    created_at: c.created_at,
+    author_id: c.author_id,
+    authorName: displayOf(c.author),
+    avatarUrl: c.author?.avatar_url ?? null,
+  }));
+
   return (
     <div className="flex h-full w-full min-w-0 flex-col">
       {/* Marca como lido (some o badge de não-lidas deste tópico). */}
@@ -125,64 +133,41 @@ export default async function ChatPage({
         {isAuthor && <DeleteTopicButton postId={post.id} title={post.title} />}
       </header>
 
-      {/* Corpo da conversa */}
-      <div className="wa-scroll wa-chat-bg flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 md:px-16">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-1.5">
-          {/* aviso de abertura */}
-          <SystemChip>
-            Tópico aberto por {authorName} · {formatDate(post.created_at)}
-          </SystemChip>
-
-          {/* mensagem de abertura (corpo do tópico) */}
-          {post.body && (
-            <MessageBubble
-              mine={post.author_id === userId}
-              name={authorName}
-              avatarSrc={post.author?.avatar_url}
-              body={post.body}
-              time={post.created_at}
-              editable={isAuthor}
-              kind="post"
-              id={post.id}
-              postId={post.id}
-            />
-          )}
-
-          {/* comentários */}
-          {comments.map((c) => (
-            <MessageBubble
-              key={c.id}
-              mine={c.author_id === userId}
-              name={displayOf(c.author)}
-              avatarSrc={c.author?.avatar_url}
-              body={c.body}
-              time={c.created_at}
-              editable={c.author_id === userId}
-              kind="comment"
-              id={c.id}
-              postId={post.id}
-            />
-          ))}
-
-          {/* aviso de status */}
-          {post.changer && post.status_changed_at && (
+      {/* Conversa (envio otimista) + campo de digitar */}
+      <Conversation
+        postId={post.id}
+        currentUserId={userId ?? ""}
+        initialMessages={initialMessages}
+        opening={
+          <>
+            <SystemChip>
+              Tópico aberto por {authorName} · {formatDate(post.created_at)}
+            </SystemChip>
+            {post.body && (
+              <MessageBubble
+                mine={post.author_id === userId}
+                name={authorName}
+                avatarSrc={post.author?.avatar_url}
+                body={post.body}
+                time={post.created_at}
+                editable={isAuthor}
+                kind="post"
+                id={post.id}
+                postId={post.id}
+              />
+            )}
+          </>
+        }
+        statusNotice={
+          post.changer && post.status_changed_at ? (
             <SystemChip highlight>
               {displayOf(post.changer)} marcou como{" "}
               {isConcluido ? "Concluído" : "Aberto"} ·{" "}
               {formatDate(post.status_changed_at)}
             </SystemChip>
-          )}
-
-          <ScrollToBottom
-            dep={`${comments.length}:${comments[comments.length - 1]?.id ?? ""}`}
-          />
-        </div>
-      </div>
-
-      {/* Campo de digitar */}
-      <footer className="bg-wa-panel px-3 py-2.5 md:px-4">
-        <CommentComposer postId={post.id} />
-      </footer>
+          ) : null
+        }
+      />
     </div>
   );
 }

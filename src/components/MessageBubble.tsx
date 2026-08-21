@@ -22,6 +22,7 @@ export default function MessageBubble({
   kind,
   id,
   postId,
+  status,
 }: {
   mine: boolean;
   name: string;
@@ -32,6 +33,7 @@ export default function MessageBubble({
   kind: "post" | "comment";
   id: string;
   postId: string;
+  status?: "sending";
 }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,7 +76,9 @@ export default function MessageBubble({
       <div
         className={`relative min-w-0 max-w-[80%] rounded-lg py-1.5 shadow-sm ${
           mine ? "bg-wa-bubbleout" : "bg-wa-bubblein"
-        } ${editable && !editing ? "pl-2.5 pr-7" : "px-2.5"}`}
+        } ${editable && !editing ? "pl-2.5 pr-7" : "px-2.5"} ${
+          status === "sending" ? "opacity-70" : ""
+        }`}
       >
         {!mine && (
           <span
@@ -119,7 +123,22 @@ export default function MessageBubble({
             <div className="whitespace-pre-wrap wrap-break-word text-sm text-[#111b21]">
               {body}
             </div>
-            <div className="mt-1 flex justify-end">
+            <div className="mt-1 flex items-center justify-end gap-1">
+              {status === "sending" && (
+                <svg
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-wa-secondary"
+                  aria-label="Enviando"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
               <span className="select-none text-[10px] text-wa-secondary">
                 {formatTime(time)}
               </span>

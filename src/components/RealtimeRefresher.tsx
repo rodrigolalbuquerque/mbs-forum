@@ -20,8 +20,9 @@ export default function RealtimeRefresher() {
     let cancelled = false;
 
     const refresh = () => {
+      // Debounce curto: coalesce rajadas mas fica imperceptível.
       clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => router.refresh(), 250);
+      refreshTimer = setTimeout(() => router.refresh(), 50);
     };
 
     async function subscribe() {
