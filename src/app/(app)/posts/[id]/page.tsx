@@ -47,11 +47,10 @@ export default async function ChatPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  // user.id local (sem chamada de rede) — o proxy/middleware já validou a sessão.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const userId = session?.user.id;
+  // getClaims verifica o JWT localmente (chaves assimétricas do projeto): seguro
+  // e sem a chamada de rede do getUser — e sem o aviso do getSession.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
 
   // Post e comentários em paralelo (1 ida-e-volta em vez de 2 sequenciais).
   const [{ data: postData }, { data: commentsData }] = await Promise.all([

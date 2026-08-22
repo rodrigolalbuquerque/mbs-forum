@@ -73,7 +73,7 @@ export default function TopicList({ items }: { items: TopicItem[] }) {
                       active
                         ? "bg-wa-panel"
                         : concluido
-                          ? "bg-black/4 hover:bg-wa-hover"
+                          ? "bg-black/5 hover:bg-wa-hover"
                           : "hover:bg-wa-hover"
                     }`}
                   >
@@ -88,7 +88,7 @@ export default function TopicList({ items }: { items: TopicItem[] }) {
                     />
                     <div
                       className={`min-w-0 flex-1 border-b border-wa-panelborder pb-3 ${
-                        concluido ? "opacity-75" : ""
+                        concluido ? "opacity-70" : ""
                       }`}
                     >
                       <div className="flex items-baseline justify-between gap-2">
