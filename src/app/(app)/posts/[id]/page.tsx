@@ -37,6 +37,9 @@ type Comment = {
   created_at: string;
   author_id: string;
   author: Profile;
+  file_path: string | null;
+  file_name: string | null;
+  file_size: number | null;
 };
 
 export default async function ChatPage({
@@ -64,7 +67,7 @@ export default async function ChatPage({
     supabase
       .from("comments")
       .select(
-        "id, body, created_at, author_id, author:profiles!comments_author_id_fkey(name, display_name, avatar_url)",
+        "id, body, created_at, author_id, file_path, file_name, file_size, author:profiles!comments_author_id_fkey(name, display_name, avatar_url)",
       )
       .eq("post_id", id)
       .order("created_at", { ascending: true }),
@@ -85,6 +88,9 @@ export default async function ChatPage({
     author_id: c.author_id,
     authorName: displayOf(c.author),
     avatarUrl: c.author?.avatar_url ?? null,
+    filePath: c.file_path,
+    fileName: c.file_name,
+    fileSize: c.file_size,
   }));
 
   return (

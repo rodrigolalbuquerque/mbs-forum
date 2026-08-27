@@ -13,6 +13,9 @@ export type ChatMessage = {
   author_id: string;
   authorName: string;
   avatarUrl: string | null;
+  filePath?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
   status?: "sending";
 };
 
@@ -30,6 +33,7 @@ export default function Conversation({
   statusNotice: React.ReactNode;
 }) {
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [pending, startTransition] = useTransition();
   const [optimistic, addOptimistic] = useOptimistic(
     initialMessages,
@@ -38,13 +42,11 @@ export default function Conversation({
 
   function handleSend() {
     const body = text.trim();
-    if (!body || pending) return;
+    if ((!body && !file) || pending) return;
 
-    setText(""); // limpa na hora → reenvio manda vazio (bloqueado)
-
-    const fd = new FormData();
-    fd.set("post_id", postId);
-    fd.set("body", body);
+    const attaching = file;
+    setText("");
+    setFile(null);
 
     startTransition(async () => {
       addOptimistic({
@@ -54,23 +56,55 @@ export default function Conversation({
         author_id: currentUserId,
         authorName: "",
         avatarUrl: null,
+        fileName: attaching?.name ?? null,
+        fileSize: attaching?.size ?? null,
+        filePath: null,
         status: "sending",
       });
+
       try {
+        const fd = new FormData();
+        fd.set("post_id", postId);
+        fd.set("body", body);
+
+        if (attaching) {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const ext = attaching.name.split(".").pop()?.toLowerCase() || "bin";
+          const path = `${currentUserId}/${crypto.randomUUID()}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from("chat-files")
+            .upload(path, attaching, {
+              contentType: attaching.type || undefined,
+            });
+          if (upErr) throw upErr;
+          fd.set("file_path", path);
+          fd.set("file_name", attaching.name);
+          fd.set("file_type", attaching.type || "");
+          fd.set("file_size", String(attaching.size));
+        }
+
         await addComment(fd);
       } catch {
-        setText(body); // falhou: devolve o texto (o otimista some ao fim)
+        // Falhou: devolve texto e anexo, sem perder nada.
+        setText(body);
+        setFile(attaching);
       }
     });
   }
 
-  // Dedup otimista×realtime: se o realtime do próprio insert já trouxe a
-  // mensagem real, descarta a otimista equivalente para não aparecer 2×.
+  // Dedup otimista×realtime: descarta a temp cuja (autor+texto+arquivo) já
+  // exista num comentário real (evita aparecer 2×).
   const reals = optimistic.filter((m) => !m.status);
   const messages = optimistic.filter(
     (m) =>
       !m.status ||
-      !reals.some((r) => r.author_id === m.author_id && r.body === m.body),
+      !reals.some(
+        (r) =>
+          r.author_id === m.author_id &&
+          r.body === m.body &&
+          (r.fileName ?? "") === (m.fileName ?? ""),
+      ),
   );
 
   const lastId = messages[messages.length - 1]?.id ?? "";
@@ -91,6 +125,9 @@ export default function Conversation({
               time={m.created_at}
               editable={!m.status && m.author_id === currentUserId}
               status={m.status}
+              filePath={m.filePath}
+              fileName={m.fileName}
+              fileSize={m.fileSize}
               kind="comment"
               id={m.id}
               postId={postId}
@@ -109,6 +146,9 @@ export default function Conversation({
           onChange={setText}
           onSend={handleSend}
           pending={pending}
+          fileName={file?.name ?? null}
+          onPickFile={setFile}
+          onRemoveFile={() => setFile(null)}
         />
       </footer>
     </>

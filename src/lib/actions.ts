@@ -30,18 +30,54 @@ export async function createPost(formData: FormData) {
   redirect(`/posts/${data.id}`);
 }
 
+// Anexos: tipos e limite permitidos (validados também no cliente).
+const ALLOWED_FILE_EXT = ["pdf", "doc", "docx", "md", "txt"];
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
 export async function addComment(formData: FormData) {
   const postId = String(formData.get("post_id") ?? "");
   const body = String(formData.get("body") ?? "").trim();
-  if (!postId || !body) return;
+  const filePath = String(formData.get("file_path") ?? "").trim() || null;
+  const fileName = String(formData.get("file_name") ?? "").trim() || null;
+  const fileType = String(formData.get("file_type") ?? "").trim() || null;
+  const fileSize = Number(formData.get("file_size") ?? 0);
+  if (!postId) return;
+  if (!body && !filePath) return;
 
   const { supabase, user } = await requireUser();
-  const { error } = await supabase
-    .from("comments")
-    .insert({ post_id: postId, author_id: user.id, body });
+
+  if (filePath) {
+    const ext = (fileName?.split(".").pop() ?? "").toLowerCase();
+    if (!ALLOWED_FILE_EXT.includes(ext))
+      throw new Error("Tipo de arquivo não permitido.");
+    if (fileSize > MAX_FILE_BYTES) throw new Error("Arquivo acima de 10 MB.");
+    if (!filePath.startsWith(`${user.id}/`))
+      throw new Error("Caminho de arquivo inválido.");
+  }
+
+  const { error } = await supabase.from("comments").insert({
+    post_id: postId,
+    author_id: user.id,
+    body,
+    file_path: filePath,
+    file_name: fileName,
+    file_type: fileType,
+    file_size: filePath ? fileSize : null,
+  });
 
   if (error) throw new Error(error.message);
   revalidatePath(`/posts/${postId}`);
+}
+
+// Gera uma URL assinada (curta) para baixar/abrir um anexo. A RLS do Storage
+// garante que só usuários aprovados conseguem assinar.
+export async function signAttachment(path: string): Promise<string | null> {
+  if (!path) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.storage
+    .from("chat-files")
+    .createSignedUrl(path, 60);
+  return data?.signedUrl ?? null;
 }
 
 export async function setStatus(formData: FormData) {
@@ -146,19 +182,44 @@ export async function updateComment(
 export async function deleteCommentById(commentId: string, postId: string) {
   if (!commentId) return;
   const { supabase } = await requireUser();
+
+  // Pega o anexo (se houver) para remover do Storage.
+  const { data: c } = await supabase
+    .from("comments")
+    .select("file_path")
+    .eq("id", commentId)
+    .single();
+
   const { error } = await supabase
     .from("comments")
     .delete()
     .eq("id", commentId);
   if (error) throw new Error(error.message);
+
+  if (c?.file_path) {
+    await supabase.storage.from("chat-files").remove([c.file_path]);
+  }
   revalidatePath(`/posts/${postId}`);
 }
 
 export async function deletePostById(postId: string) {
   if (!postId) return;
   const { supabase } = await assertPostAuthor(postId);
+
+  // Remove os anexos dos comentários do tópico (evita órfãos no Storage).
+  const { data: files } = await supabase
+    .from("comments")
+    .select("file_path")
+    .eq("post_id", postId)
+    .not("file_path", "is", null);
+  const paths = (files ?? [])
+    .map((f) => f.file_path)
+    .filter((p): p is string => !!p);
+
   const { error } = await supabase.from("posts").delete().eq("id", postId);
   if (error) throw new Error(error.message);
+
+  if (paths.length) await supabase.storage.from("chat-files").remove(paths);
   revalidatePath("/");
   redirect("/");
 }

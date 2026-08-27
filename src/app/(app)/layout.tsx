@@ -40,7 +40,9 @@ export default async function AppLayout({
     count: Number(r.unread_count) || 0,
     preview: r.last_body
       ? `${r.last_author}: ${r.last_body}`
-      : r.topic_preview || "Novo tópico",
+      : r.last_file_name
+        ? `${r.last_author}: 📎 ${r.last_file_name}`
+        : r.topic_preview || "Novo tópico",
     lastActivity: r.last_activity,
   }));
 

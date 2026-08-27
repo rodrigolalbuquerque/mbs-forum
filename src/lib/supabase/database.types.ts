@@ -19,6 +19,10 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
           id: string
           post_id: string
         }
@@ -26,6 +30,10 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
           id?: string
           post_id: string
         }
@@ -33,6 +41,10 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
           id?: string
           post_id?: string
         }
@@ -174,6 +186,7 @@ export type Database = {
           last_activity: string
           last_author: string
           last_body: string
+          last_file_name: string
           status: string
           title: string
           topic_preview: string

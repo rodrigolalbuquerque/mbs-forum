@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import MessageText from "@/components/MessageText";
+import AttachmentCard from "@/components/AttachmentCard";
 import { colorFor } from "@/lib/colors";
 import { formatTime } from "@/lib/format";
 import {
@@ -23,6 +24,9 @@ export default function MessageBubble({
   kind,
   id,
   postId,
+  filePath,
+  fileName,
+  fileSize,
   status,
 }: {
   mine: boolean;
@@ -34,6 +38,9 @@ export default function MessageBubble({
   kind: "post" | "comment";
   id: string;
   postId: string;
+  filePath?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
   status?: "sending";
 }) {
   const router = useRouter();
@@ -121,7 +128,15 @@ export default function MessageBubble({
           </div>
         ) : (
           <>
-            <MessageText>{body}</MessageText>
+            {fileName && (
+              <AttachmentCard
+                path={filePath}
+                name={fileName}
+                size={fileSize}
+                pending={status === "sending"}
+              />
+            )}
+            {body && <MessageText>{body}</MessageText>}
             <div className="mt-1 flex items-center justify-end gap-1">
               {status === "sending" && (
                 <svg
