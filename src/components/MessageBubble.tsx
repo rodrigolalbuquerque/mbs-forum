@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import Avatar from "@/components/Avatar";
+import MessageText from "@/components/MessageText";
 import { colorFor } from "@/lib/colors";
 import { formatTime } from "@/lib/format";
 import {
@@ -120,9 +121,7 @@ export default function MessageBubble({
           </div>
         ) : (
           <>
-            <div className="whitespace-pre-wrap wrap-break-word text-sm text-[#111b21]">
-              {body}
-            </div>
+            <MessageText>{body}</MessageText>
             <div className="mt-1 flex items-center justify-end gap-1">
               {status === "sending" && (
                 <svg
